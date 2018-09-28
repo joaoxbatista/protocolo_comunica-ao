@@ -1,8 +1,10 @@
 # coding: utf-8
 
-from classes.comunication.ModelComunication import ModelComunication
+from classes.Client import Client
+from classes.Server import Server
 
-model = ModelComunication(['cesar'], ['rsa'], ['md5'])
-model2 = ModelComunication(['cesar'], ['rsa'], ['md5'])
+client = Client(['3des', 'aes'], ['rsa','diffie-helman'])
+server = Server(['3des'], ['rsa'])
 
-print(model.selectSimetric(model2))
+if(server.accord(client)):
+    print("Acordo de comunicação realizado com sucesso!")

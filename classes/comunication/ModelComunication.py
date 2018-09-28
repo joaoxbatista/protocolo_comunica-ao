@@ -1,55 +1,46 @@
 # coding: utf-8
 
 class ModelComunication(object):
-
-
-
-    def __init__(self, simetric = [''], assimetric = [''], hash = ['']):
+    def __init__(self, simetric = [''], assimetric = ['']):
         self.comunication = {
             "suport": {
                 "simetric": simetric,
-                "assimetric": assimetric,
-                "hash": hash
+                "assimetric": assimetric
             },
 
         }
-
         self.selected = {
             "simetric": None,
             "assimetric": None,
-            "hash": None
+        }
+
+        self.keys = {
+            "simetric": "",
+            "public_key": "",
+            "private_key": ""
         }
 
 
     def accordComunication(self, model):
-        pass
+        if (self.selectSimetric(model) and self.selectAssimetric(model)):
+            return True
+        return False
 
-    '''
-    Getters and Setters
-    '''
     def selectSimetric(self,model):
-
-        print(model.selected)
         for simetric_type in self.comunication["suport"]["simetric"]:
             for simetric_type_to in model.comunication["suport"]["simetric"]:
                 if(simetric_type == simetric_type_to):
                     self.selected["simetric"] = simetric_type
                     model.selected["simetric"] = simetric_type
-                    print(model.selected)
                     return True
 
         return False
 
-    def selectAssimetric(self,assimetric):
+    def selectAssimetric(self,model):
         for assimetric_type in self.comunication["suport"]["assimetric"]:
-            if(assimetric_type == assimetric):
-                self.selected["assimetric"] = assimetric
-                return True
-        return False
-
-    def selectHash(self,hash):
-        for hash_type in self.comunication["suport"]["hash"]:
-            if(hash_type == hash):
-                self.selected["hash"] = hash
-                return True
+            for assimetric_type_to in model.comunication["suport"]["assimetric"]:
+                if(assimetric_type == assimetric_type_to):
+                    self.selected["assimetric"] = assimetric_type
+                    model.selected["assimetric"] = assimetric_type
+                    return True
         return False
