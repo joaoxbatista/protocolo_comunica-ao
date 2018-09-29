@@ -1,5 +1,4 @@
 # coding: utf-8
-
 class ModelComunication(object):
     def __init__(self, simetric = [''], assimetric = ['']):
         self.comunication = {

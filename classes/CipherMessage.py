@@ -1,4 +1,5 @@
 # coding: utf-8
+
 # 1 - Simetric Encryptation
 # from cryptography.fernet import Fernet
 # key = Fernet.generate_key()
