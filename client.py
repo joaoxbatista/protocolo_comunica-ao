@@ -20,14 +20,17 @@ def is_json(myjson):
 		return False
 	return True
 
-def formatMessage(type ,key, data):
+def formatMessage(type_message ,key, data, counter):
+	counter = counter + 1
 	result =  {
-		"type_message": type,
+		"type_message": type_message,
 		"data": {
 			key: data
-		}
-	}
+		},
+		"r": counter
+    }
 	result = json.dumps(result)
+	print("message content: " + result)
 	return result.encode("utf-8")
 
 def generate_keys():
@@ -88,6 +91,7 @@ server_keys = {
 	"public_key": None
 }
 
+counter = 0
 
 # '''
 # 	1 - Conexão com o servidor
@@ -101,7 +105,7 @@ dest_address = ('localhost' , 8001)
 # '''
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.connect(dest_address)
-server.send(formatMessage("accord_comunication", "suport", suport))
+server.send(formatMessage("accord_comunication", "suport", suport, counter))
 
 # '''
 #   3 - Escuta reposta do tipo de comunicação selecionada 
@@ -119,13 +123,13 @@ while True:
 		data = json.loads(message)
 
 		if("type_message" in data.keys()):
+			counter = data["r"]
 			if(data["type_message"] == "selected_suport"):
 				selected = data["data"]["selected"]
 				server_keys["public_key"] = load_pem_public_key(selected["public_key"].encode('utf-8'), backend=default_backend())
-				generate_keys()	
-				server.send(formatMessage("send_simetric_key", "simetric_key", encrypt_simetric_key()))
-				# print(formatMessage("send_simetric_key", "simetric_key", encrypt_simetric_key()))
-				# server.send(formatMessage("send_simetric_key", "simetric_key", keys["simetric"].decode('utf-8')))
+				generate_keys()
+				server.send(formatMessage("send_simetric_key", "simetric_key", encrypt_simetric_key(), counter))
+
 				break		
 			
 conn_server.close()		
@@ -148,7 +152,8 @@ while True:
         if(message_to_server == 'exit'):
         	break
         else:
-        	server.send(formatMessage("message", "message", encrypt_message(message_to_server.encode('utf-8'))))
+        	counter = counter + 1
+        	server.send(formatMessage("message", "message", encrypt_message(message_to_server.encode('utf-8')), counter))
         	print("* your message is sended!\n")
 
 

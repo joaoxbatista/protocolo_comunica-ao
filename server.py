@@ -23,14 +23,17 @@ def is_json(myjson):
   return True
 
 # 1 - Formata mensagens para envio
-def formatMessage(type_message ,key, data):
+def formatMessage(type_message ,key, data, counter):
+	counter = counter + 1
 	result =  {
 		"type_message": type_message,
 		"data": {
 			key: data
-		}
+		},
+		"r": counter
     }
 	result = json.dumps(result)
+	print("message content: " + result)
 	return result.encode("utf-8")
 
 # 2 - Seleciona os tipos em comum de comunicação
@@ -68,10 +71,12 @@ def get_public_key():
         format=serialization.PublicFormat.SubjectPublicKeyInfo,
     ).decode('utf-8')
 
+
 # 5 - Desencripta mesnsagem com chave simetrica do cliente
 def decrypt_message(message):
-	f = Fernet(keys["simetric"])
-	return f.decrypt(message.encode('utf-8')).decode('utf-8')
+	f = Fernet(keys["simetric"])	
+	#Define o ttl da mensagem
+	return f.decrypt(message.encode('utf-8'), 2).decode('utf-8')
 
 
 '''
@@ -94,6 +99,8 @@ keys = {
     "public_rsa": None
 }
 
+counter = 0
+
 '''
 Definir a chave Privada
 '''
@@ -105,13 +112,13 @@ dest_address = ('localhost' , 5000)
 Espera conexão com o cliente
 '''
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server.bind(local_address)
 server.listen(1)
 
 print("wwww.server.com -> waiting for client comunication \n")
 
 while True:
-
 	client, client_address = server.accept()
 	pid = os.fork()
 
@@ -128,41 +135,50 @@ while True:
 			# Caso a mensagem enviada seja um JSON
 			elif(is_json(message)):
 				data = json.loads(message)
+				print("local_r: " + str(counter) + " r: " + str(data["r"]))
+				counter = data["r"]
+				# Verifica se o contador está de acordo
+				if(counter == data["r"]):
+					if("type_message" in data.keys()):
+						if(data["type_message"] == "accord_comunication"):
+							
+							select_comunication(suport, data["data"]["suport"], selected)
+							generate_keys(selected, keys)
+							selected["public_key"] = get_public_key()
 
-				if("type_message" in data.keys()):
+							# Enviar a chave publica para o cliente 
+							print(selected)
+							server_sender = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+							server_sender.connect(dest_address)
+							server_sender.send(formatMessage("selected_suport", "selected", selected, counter))
+							server_sender.close()
+							
 
-					if(data["type_message"] == "accord_comunication"):
-						select_comunication(suport, data["data"]["suport"], selected)
-						generate_keys(selected, keys)
-						selected["public_key"] = get_public_key()
+						elif(data["type_message"] == "send_simetric_key"):
+							keys["simetric"] = data['data']['simetric_key']
+							latin1 = keys['simetric'].encode('latin-1')
+							keys["simetric"] = keys['private_rsa'].decrypt(
+							     latin1,
+							     padding.OAEP(
+							         mgf=padding.MGF1(algorithm=hashes.SHA256()),
+							         algorithm=hashes.SHA256(),
+							         label=None
+							     )
+							)
 
-						# Enviar a chave publica para o cliente 
-						server_sender = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-						server_sender.connect(dest_address)
-						server_sender.send(formatMessage("selected_suport", "selected", selected))
-						server_sender.close()
-						
 
-					elif(data["type_message"] == "send_simetric_key"):
-						keys["simetric"] = data['data']['simetric_key']
-						latin1 = keys['simetric'].encode('latin-1')
-						keys["simetric"] = keys['private_rsa'].decrypt(
-						     latin1,
-						     padding.OAEP(
-						         mgf=padding.MGF1(algorithm=hashes.SHA256()),
-						         algorithm=hashes.SHA256(),
-						         label=None
-						     )
-						)
-
-					elif(data["type_message"] == "message"):
-						print("-----------------------------------------------------------")
-						print("\n* message encrypted: " + data["data"]["message"])
-						print("\n* message decrypted: " + decrypt_message(data["data"]["message"]))
-						print("-----------------------------------------------------------")
-						
-				else:
-					print("server not suport comunication with client")
+						elif(data["type_message"] == "message"):
+							counter = counter + 1
+							print("-----------------------------------------------------------")
+							print("\n* message counter: " + str(data["r"]))
+							print("\n* message encrypted: " + data["data"]["message"])
+							print("\n* message decrypted: " + decrypt_message(data["data"]["message"]))
+							print("-----------------------------------------------------------")
+							
+					else:
+						print("server not suport comunication with client")
+				else: 
+					print("message counter erro")
 			else:
 				pass
 				
